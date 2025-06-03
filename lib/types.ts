@@ -1,4 +1,15 @@
 export interface NGO {
+  image: string
+  name: string | undefined
+  verified: any
+  nameMyanmar: ReactNode
+  cause: ReactNode
+  description: ReactNode
+  location: ReactNode
+  raised(raised: any): unknown
+  goal(goal: any): unknown
+  volunteers: ReactNode
+  events: ReactNode
   id: number
   attributes: {
     name: string
@@ -110,6 +121,14 @@ export interface VolunteerOpportunity {
 }
 
 export interface BlogPost {
+  title: any
+  excerpt: any
+  featuredImage: any
+  ngo: any
+  publishedAt: string | number | Date
+  author: any
+  documentId: any
+  data: any
   id: number
   attributes: {
     title: string

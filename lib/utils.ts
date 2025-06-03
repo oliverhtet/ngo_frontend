@@ -70,7 +70,7 @@ export function calculateProgress(current: number, target: number) {
 }
 
 export function getImageUrl(image: any, fallback = "/placeholder.svg?height=400&width=600") {
-  if (!image?.data?.attributes?.url) return fallback
-  const url = image.data.attributes.url
+  if (!image?.url) return fallback
+  const url = image.url
   return url.startsWith("http") ? url : `${process.env.NEXT_PUBLIC_STRAPI_URL}${url}`
 }

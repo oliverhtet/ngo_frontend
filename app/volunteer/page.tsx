@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,123 +8,133 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Heart, Search, MapPin, Clock, Users, Calendar, Filter } from "lucide-react"
 import Link from "next/link"
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 
-const opportunities = [
-  {
-    id: 1,
-    title: "English Teacher for Rural Schools",
-    organization: "Myanmar Education Foundation",
-    description: "Teach English to children in rural areas. No formal teaching experience required.",
-    location: "Shan State",
-    type: "On-site",
-    duration: "3 months",
-    timeCommitment: "20 hours/week",
-    skills: ["Teaching", "English", "Communication"],
-    volunteers: 5,
-    maxVolunteers: 10,
-    date: "Starting March 15, 2024",
-    urgent: false,
-  },
-  {
-    id: 2,
-    title: "Medical Camp Assistant",
-    organization: "Healthcare for All",
-    description: "Assist medical professionals during mobile clinic visits to remote villages.",
-    location: "Ayeyarwady Region",
-    type: "On-site",
-    duration: "1 week",
-    timeCommitment: "Full-time",
-    skills: ["Healthcare", "First Aid", "Communication"],
-    volunteers: 8,
-    maxVolunteers: 12,
-    date: "March 20-27, 2024",
-    urgent: true,
-  },
-  {
-    id: 3,
-    title: "Social Media Manager",
-    organization: "Clean Water Initiative",
-    description: "Manage social media accounts and create content to raise awareness.",
-    location: "Remote",
-    type: "Remote",
-    duration: "6 months",
-    timeCommitment: "10 hours/week",
-    skills: ["Social Media", "Content Creation", "Marketing"],
-    volunteers: 2,
-    maxVolunteers: 3,
-    date: "Flexible start",
-    urgent: false,
-  },
-  {
-    id: 4,
-    title: "Event Coordinator",
-    organization: "Women Empowerment Network",
-    description: "Help organize workshops and training sessions for women entrepreneurs.",
-    location: "Yangon",
-    type: "Hybrid",
-    duration: "2 months",
-    timeCommitment: "15 hours/week",
-    skills: ["Event Planning", "Communication", "Organization"],
-    volunteers: 3,
-    maxVolunteers: 5,
-    date: "Starting April 1, 2024",
-    urgent: false,
-  },
-  {
-    id: 5,
-    title: "Tree Planting Volunteer",
-    organization: "Environmental Protection Myanmar",
-    description: "Join our reforestation efforts in degraded forest areas.",
-    location: "Bagan",
-    type: "On-site",
-    duration: "1 day",
-    timeCommitment: "8 hours",
-    skills: ["Physical Work", "Environmental Awareness"],
-    volunteers: 25,
-    maxVolunteers: 50,
-    date: "March 30, 2024",
-    urgent: false,
-  },
-  {
-    id: 6,
-    title: "Nutrition Program Assistant",
-    organization: "Child Nutrition Program",
-    description: "Help prepare and distribute nutritious meals to children.",
-    location: "Mandalay",
-    type: "On-site",
-    duration: "1 month",
-    timeCommitment: "4 hours/day",
-    skills: ["Food Preparation", "Child Care", "Health"],
-    volunteers: 12,
-    maxVolunteers: 20,
-    date: "Starting March 25, 2024",
-    urgent: true,
-  },
-]
+import { apiService } from "@/lib/api" 
+
+
+interface Opportunity {
+  id: number;
+  title: string;
+  organization: string;
+  description: string;
+  location: string;
+  type: string;
+  duration: string;
+  timeCommitment: string;
+  skills: string[];
+  volunteersRegistered: number;
+  volunteersNeeded: number;
+  date: string;
+  urgent: boolean;
+}
 
 const types = ["All", "On-site", "Remote", "Hybrid"]
 const durations = ["All", "1 day", "1 week", "1 month", "2 months", "3 months", "6 months"]
 const skills = ["All", "Teaching", "Healthcare", "Social Media", "Event Planning", "Physical Work", "Communication"]
 
 export default function VolunteerPage() {
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedType, setSelectedType] = useState("All")
   const [selectedDuration, setSelectedDuration] = useState("All")
   const [selectedSkill, setSelectedSkill] = useState("All")
   const [urgentOnly, setUrgentOnly] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageCount, setPageCount] = useState(1)
+  const [totalOpportunities, setTotalOpportunities] = useState(0) 
+  const pageSize = 6;
 
-  const filteredOpportunities = opportunities.filter((opportunity) => {
-    const matchesSearch =
-      opportunity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      opportunity.organization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      opportunity.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = selectedType === "All" || opportunity.type === selectedType
-    const matchesDuration = selectedDuration === "All" || opportunity.duration === selectedDuration
-    const matchesSkill = selectedSkill === "All" || opportunity.skills.includes(selectedSkill)
-    const matchesUrgent = !urgentOnly || opportunity.urgent
+  const fetchOpportunities = useCallback(async () => {
+    setLoading(true)
+    setError(null) 
 
-    return matchesSearch && matchesType && matchesDuration && matchesSkill && matchesUrgent
-  })
+    try {
+      const filters: { [key: string]: any } = {}
+      if (searchTerm) {
+       
+        filters.name = searchTerm; 
+      }
+      if (selectedType !== "All") {
+        filters.type = selectedType
+      }
+      if (selectedSkill !== "All") {
+        filters.skills = selectedSkill
+      }
+      if (urgentOnly) {
+        filters.urgent = true
+      }
+    
+
+      const response = await apiService.getOpportunities({
+        page: currentPage,
+        pageSize: pageSize,
+        filters: filters,
+        sort: "title:asc", 
+        populate: "*", 
+      }) as {
+        data: Opportunity[]; 
+        meta: {
+          pagination: {
+            page: number;
+            pageSize: number;
+            pageCount: number;
+            total: number;
+          };
+        };
+      };
+
+      const transformedOpportunities = response.data.map(item => ({
+        id: item.id,
+        title: item.title,
+        organization: item.organization,
+        description: item.description,
+        location: item.location,
+        type: item.type,
+        duration: item.duration,
+        timeCommitment: item.timeCommitment,
+        skills: item.skills || [], 
+        volunteers: item.volunteersRegistered,
+        maxVolunteers: item.volunteersNeeded,
+        date: item.date,
+        urgent: item.urgent,
+      }));
+
+      setOpportunities(transformedOpportunities)
+      setPageCount(response.meta.pagination.pageCount)
+      setTotalOpportunities(response.meta.pagination.total)
+
+    } catch (err) {
+      console.error("Failed to fetch opportunities:", err)
+      setError("Failed to load opportunities. Please try again later.")
+    } finally {
+      setLoading(false)
+    }
+  }, [searchTerm, selectedType, selectedSkill, urgentOnly, currentPage]) // Add selectedDuration if you integrate its filter
+
+  useEffect(() => {
+    fetchOpportunities()
+  }, [fetchOpportunities])
+
+  useEffect(() => {
+    if (currentPage !== 1 && !loading) { // Add !loading to prevent premature reset on initial load
+        setCurrentPage(1);
+    }
+  }, [searchTerm, selectedType, selectedSkill, urgentOnly]); // Add selectedDuration if you integrate its filter
+
+  const handleNextPage = () => {
+    if (currentPage < pageCount) {
+      setCurrentPage(prev => prev + 1)
+    }
+  }
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -236,7 +246,7 @@ export default function VolunteerPage() {
             </div>
 
             <div className="text-sm text-gray-600">
-              Showing {filteredOpportunities.length} of {opportunities.length} opportunities
+              Showing {opportunities.length} of {totalOpportunities} opportunities
             </div>
           </div>
         </div>
@@ -245,99 +255,131 @@ export default function VolunteerPage() {
       {/* Opportunities Grid */}
       <section className="py-12 px-4">
         <div className="container mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredOpportunities.map((opportunity) => (
-              <Card key={opportunity.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg mb-2">{opportunity.title}</CardTitle>
-                      <CardDescription className="text-blue-600 font-medium mb-2">
-                        {opportunity.organization}
-                      </CardDescription>
-                      <p className="text-sm text-gray-600 mb-3">{opportunity.description}</p>
-                    </div>
-                    {opportunity.urgent && (
-                      <Badge variant="destructive" className="ml-2">
-                        Urgent
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {/* Location and Type */}
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-gray-600">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {opportunity.location}
+          {loading ? (
+            <div className="text-center py-12 text-gray-600">Loading opportunities...</div>
+          ) : error ? (
+            <div className="text-center py-12 text-red-600">{error}</div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {opportunities.map((opportunity) => (
+                <Card key={opportunity.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg mb-2">{opportunity.title}</CardTitle>
+                        <CardDescription className="text-blue-600 font-medium mb-2">
+                          {opportunity.organization}
+                        </CardDescription>
+                        <p className="text-sm text-gray-600 mb-3">{opportunity.description}</p>
                       </div>
-                      <Badge variant="outline">{opportunity.type}</Badge>
+                      {opportunity.urgent && (
+                        <Badge variant="destructive" className="ml-2">
+                          Urgent
+                        </Badge>
+                      )}
                     </div>
-
-                    {/* Duration and Time */}
-                    <div className="flex items-center justify-between text-sm text-gray-600">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {opportunity.duration}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {/* Location and Type */}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center text-gray-600">
+                          <MapPin className="h-4 w-4 mr-1" />
+                          {opportunity.location}
+                        </div>
+                        <Badge variant="outline">{opportunity.type}</Badge>
                       </div>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {opportunity.timeCommitment}
+
+                      {/* Duration and Time */}
+                      <div className="flex items-center justify-between text-sm text-gray-600">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {opportunity.duration}
+                        </div>
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {opportunity.timeCommitment}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Date */}
-                    <div className="text-sm text-gray-600">
-                      <strong>Start:</strong> {opportunity.date}
-                    </div>
-
-                    {/* Skills */}
-                    <div>
-                      <div className="text-sm font-medium text-gray-700 mb-2">Required Skills:</div>
-                      <div className="flex flex-wrap gap-1">
-                        {opportunity.skills.map((skill, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {skill}
-                          </Badge>
-                        ))}
+                      {/* Date */}
+                      <div className="text-sm text-gray-600">
+                        <strong>Start:</strong> {opportunity.date}
                       </div>
-                    </div>
 
-                    {/* Volunteers */}
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-gray-600">
-                        <Users className="h-4 w-4 mr-1" />
-                        {opportunity.volunteers}/{opportunity.maxVolunteers} volunteers
+                      {/* Skills */}
+                      <div>
+                        <div className="text-sm font-medium text-gray-700 mb-2">Required Skills:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {opportunity.skills.map((skill, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {skill}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
-                      <div className="text-gray-500">
-                        {opportunity.maxVolunteers - opportunity.volunteers} spots left
+
+                      {/* Volunteers */}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center text-gray-600">
+                          <Users className="h-4 w-4 mr-1" />
+                          {opportunity.volunteers}/{opportunity.maxVolunteers} volunteers
+                        </div>
+                        <div className="text-gray-500">
+                          {opportunity.maxVolunteers - opportunity.volunteers} spots left
+                        </div>
                       </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{ width: `${(opportunity.volunteers / opportunity.maxVolunteers) * 100}%` }}
+                        ></div>
+                      </div>
+
+                      {/* Action Button */}
+                      <Button className="w-full mt-4">Apply to Volunteer</Button>
                     </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
-                    {/* Progress Bar */}
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${(opportunity.volunteers / opportunity.maxVolunteers) * 100}%` }}
-                      ></div>
-                    </div>
-
-                    {/* Action Button */}
-                    <Button className="w-full mt-4">Apply to Volunteer</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {filteredOpportunities.length === 0 && (
+          {opportunities.length === 0 && !loading && !error && (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-4">
                 <Search className="h-16 w-16 mx-auto" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No opportunities found</h3>
               <p className="text-gray-600">Try adjusting your search criteria</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {pageCount > 1 && (
+            <div className="mt-8 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={handlePreviousPage}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  {/* You could add page numbers here if you have many pages */}
+                  <PaginationItem className="px-4 text-gray-700">
+                    Page {currentPage} of {pageCount}
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={handleNextPage}
+                      className={currentPage === pageCount ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </div>

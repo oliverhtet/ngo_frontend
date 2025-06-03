@@ -141,6 +141,32 @@ class ApiService {
     return this.request(`/ngos?${searchParams.toString()}`)
   }
 
+  // getOpportunities
+  async getOpportunities(params?: {
+    page?: number
+    pageSize?: number
+    filters?: any
+    sort?: string
+    populate?: string
+  }) {
+    const searchParams = new URLSearchParams()
+
+    if (params?.page) searchParams.append("pagination[page]", params.page.toString())
+    if (params?.pageSize) searchParams.append("pagination[pageSize]", params.pageSize.toString())
+    if (params?.sort) searchParams.append("sort", params.sort)
+    if (params?.populate) searchParams.append("populate", params.populate)
+
+    if (params?.filters) {
+      Object.entries(params.filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          searchParams.append(`filters[${key}][$containsi]`, value.toString())
+        }
+      })
+    }
+
+    return this.request(`/volunteer-opportunities?${searchParams.toString()}`)
+  }
+  
   async getNGO(id: string, populate?: string) {
     const searchParams = new URLSearchParams()
     if (populate) searchParams.append("populate", populate)
@@ -238,6 +264,9 @@ class ApiService {
   }) {
     const searchParams = new URLSearchParams();
   
+    // ✅ This is the key line to exclude drafts
+    searchParams.append("publicationState", "live");
+  
     if (params?.page) searchParams.append("pagination[page]", params.page.toString());
     if (params?.pageSize) searchParams.append("pagination[pageSize]", params.pageSize.toString());
     if (params?.sort) searchParams.append("sort", params.sort);
@@ -251,15 +280,16 @@ class ApiService {
       });
     }
   
-    return this.request(`/blog-posts?${searchParams.toString()}`);
+    return this.request(`/blog-posts?draft=false&${searchParams.toString()}`);
   }
   
   
-  async getBlogPost(id: string, populate?: string) {
+  
+  async getBlogPost(uid: string, populate?: string) {
     const searchParams = new URLSearchParams();
     if (populate) searchParams.append("populate", populate);
-  
-    return this.request(`/blog-posts/${id}?${searchParams.toString()}`);
+    const fullPath = `/blog-posts/${uid}?${searchParams.toString()}`;
+    return this.request(fullPath);
   }
    
   

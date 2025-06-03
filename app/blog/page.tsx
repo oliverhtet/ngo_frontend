@@ -146,7 +146,7 @@ export default function BlogPage() {
                       {post.author?.name || "Anonymous"}
                     </div>
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/blog/${post.id}`} className="flex items-center">
+                      <Link href={`/blog/${post.documentId}`} className="flex items-center">
                         Read More
                         <ArrowRight className="ml-1 h-3 w-3" />
                       </Link>
