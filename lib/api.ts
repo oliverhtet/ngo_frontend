@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 const API_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "http://localhost:1337"
 const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || null;
 
@@ -167,11 +169,11 @@ class ApiService {
     return this.request(`/volunteer-opportunities?${searchParams.toString()}`)
   }
   
-  async getNGO(id: string, populate?: string) {
+  async getNGO(uid: string, populate?: string) {
     const searchParams = new URLSearchParams()
     if (populate) searchParams.append("populate", populate)
 
-    return this.request(`/ngos/${id}?${searchParams.toString()}`)
+    return this.request(`/ngos/${uid}?${searchParams.toString()}`)
   }
 
   // Donations

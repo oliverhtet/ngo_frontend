@@ -1,4 +1,5 @@
 export interface NGO {
+  documentId: any
   image: string
   name: string | undefined
   verified: any

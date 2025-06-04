@@ -332,13 +332,13 @@ console.log("API Response:", response); // Debugging log to check API response s
 
                         {/* Action Buttons */}
                         <div className="flex gap-2">
-                          <Link href={`/donate/${ngo.id}`} className="flex-1">
+                          <Link href={`/donate/${ngo.documentId}`} className="flex-1">
                             <Button size="sm" className="w-full">
                               Donate Now
                             </Button>
                           </Link>
                           <Button size="sm" variant="outline" asChild>
-                            <Link href={`/ngos/${ngo.id}`}>View Details</Link>
+                            <Link href={`/ngos/${ngo.documentId}`}>View Details</Link>
                           </Button>
                         </div>
                       </div>

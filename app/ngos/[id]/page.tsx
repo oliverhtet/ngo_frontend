@@ -1,372 +1,234 @@
+"use client"
+
+import type React from "react"
+import { use } from 'react';
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import {
   Heart,
   MapPin,
   Users,
+  CheckCircle,
   Calendar,
   Phone,
   Mail,
   Globe,
   Facebook,
   Share2,
-  CheckCircle,
   Target,
   TrendingUp,
+
+  ArrowLeft,
+  CreditCard,
+  Smartphone,
+  Building,
+  Loader2,
+  Shield,
+  Info,
+  XCircle,
 } from "lucide-react"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { useRouter } from "next/navigation"
 
-// Mock data - in real app this would come from API
-const ngosData = {
-  "1": {
-    id: 1,
-    name: "Myanmar Education Foundation",
-    nameMyanmar: "မြန်မာပညာရေးဖောင်ဒေးရှင်း",
-    description: "Providing quality education to underprivileged children across Myanmar",
-    longDescription:
-      "The Myanmar Education Foundation has been working tirelessly since 2015 to ensure that every child in Myanmar has access to quality education. We believe that education is the key to breaking the cycle of poverty and building a brighter future for our nation.",
-    image: "/placeholder.svg?height=400&width=800",
-    cause: "Education",
-    location: "Yangon",
-    verified: true,
-    founded: "2015",
-    raised: "2,500,000",
-    goal: "5,000,000",
-    volunteers: 45,
-    events: 8,
-    beneficiaries: "12,000+",
-    contact: {
-      phone: "+95 9 123 456 789",
-      email: "info@myanmareducation.org",
-      website: "www.myanmareducation.org",
-      facebook: "MyanmarEducationFoundation",
-    },
-    campaigns: [
-      {
-        id: 1,
-        title: "School Building Project",
-        description: "Building new classrooms in rural areas",
-        raised: 1200000,
-        goal: 2000000,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-      {
-        id: 2,
-        title: "Teacher Training Program",
-        description: "Training local teachers with modern methods",
-        raised: 800000,
-        goal: 1500000,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-    ],
-    events: [
-      {
-        id: 1,
-        title: "Education Fair 2024",
-        date: "March 15, 2024",
-        location: "Yangon Convention Center",
-        volunteers: 25,
-      },
-      {
-        id: 2,
-        title: "Book Donation Drive",
-        date: "March 22, 2024",
-        location: "Various locations",
-        volunteers: 15,
-      },
-    ],
-    updates: [
-      {
-        id: 1,
-        title: "New School Opened in Shan State",
-        date: "February 28, 2024",
-        content: "We're excited to announce the opening of our 15th school, serving 200 children in a remote village.",
-      },
-      {
-        id: 2,
-        title: "Teacher Training Graduation",
-        date: "February 15, 2024",
-        content:
-          "30 new teachers completed our intensive training program and are now ready to serve their communities.",
-      },
-    ],
-  },
-  "2": {
-    id: 2,
-    name: "Clean Water Initiative",
-    nameMyanmar: "သန့်ရှင်းသောရေစီမံကိန်း",
-    description: "Building wells and water systems in rural communities",
-    longDescription:
-      "Clean Water Initiative has been providing access to clean, safe drinking water to rural communities across Myanmar since 2018. We focus on sustainable solutions that communities can maintain themselves.",
-    image: "/placeholder.svg?height=400&width=800",
-    cause: "Water & Sanitation",
-    location: "Mandalay",
-    verified: true,
-    founded: "2018",
-    raised: "1,800,000",
-    goal: "3,000,000",
-    volunteers: 32,
-    events: 5,
-    beneficiaries: "8,500+",
-    contact: {
-      phone: "+95 9 234 567 890",
-      email: "info@cleanwatermyanmar.org",
-      website: "www.cleanwatermyanmar.org",
-      facebook: "CleanWaterMyanmar",
-    },
-    campaigns: [
-      {
-        id: 1,
-        title: "Village Well Project",
-        description: "Drilling wells in 20 villages",
-        raised: 900000,
-        goal: 1500000,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-    ],
-    events: [
-      {
-        id: 1,
-        title: "Water System Training",
-        date: "March 18, 2024",
-        location: "Mandalay Community Center",
-        volunteers: 12,
-      },
-    ],
-    updates: [
-      {
-        id: 1,
-        title: "10 New Wells Completed",
-        date: "February 25, 2024",
-        content: "We successfully completed 10 new wells, providing clean water access to over 2,000 people.",
-      },
-    ],
-  },
-  "3": {
-    id: 3,
-    name: "Healthcare for All",
-    nameMyanmar: "လူတိုင်းအတွက်ကျန်းမာရေး",
-    description: "Mobile clinics serving remote villages",
-    longDescription:
-      "Healthcare for All operates mobile medical clinics that reach the most remote areas of Myanmar, providing essential healthcare services to underserved communities since 2017.",
-    image: "/placeholder.svg?height=400&width=800",
-    cause: "Healthcare",
-    location: "Shan State",
-    verified: true,
-    founded: "2017",
-    raised: "950,000",
-    goal: "2,000,000",
-    volunteers: 28,
-    events: 12,
-    beneficiaries: "15,000+",
-    contact: {
-      phone: "+95 9 345 678 901",
-      email: "info@healthcareforall.org",
-      website: "www.healthcareforall.org",
-      facebook: "HealthcareForAllMyanmar",
-    },
-    campaigns: [
-      {
-        id: 1,
-        title: "Mobile Clinic Expansion",
-        description: "Adding 3 new mobile clinics",
-        raised: 600000,
-        goal: 1200000,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-    ],
-    events: [
-      {
-        id: 1,
-        title: "Medical Camp - Shan State",
-        date: "March 20, 2024",
-        location: "Remote villages",
-        volunteers: 15,
-      },
-    ],
-    updates: [
-      {
-        id: 1,
-        title: "New Medical Equipment Arrived",
-        date: "February 20, 2024",
-        content: "Our mobile clinics are now equipped with advanced diagnostic equipment to better serve patients.",
-      },
-    ],
-  },
-  "4": {
-    id: 4,
-    name: "Environmental Protection Myanmar",
-    nameMyanmar: "မြန်မာပတ်ဝန်းကျင်ကာကွယ်ရေး",
-    description: "Protecting forests and wildlife conservation",
-    longDescription:
-      "Environmental Protection Myanmar is dedicated to preserving Myanmar's natural heritage through forest conservation, wildlife protection, and environmental education programs.",
-    image: "/placeholder.svg?height=400&width=800",
-    cause: "Environment",
-    location: "Bagan",
-    verified: true,
-    founded: "2019",
-    raised: "750,000",
-    goal: "1,500,000",
-    volunteers: 18,
-    events: 6,
-    beneficiaries: "5,000+",
-    contact: {
-      phone: "+95 9 456 789 012",
-      email: "info@environmentmyanmar.org",
-      website: "www.environmentmyanmar.org",
-      facebook: "EnvironmentMyanmar",
-    },
-    campaigns: [
-      {
-        id: 1,
-        title: "Forest Restoration",
-        description: "Replanting native trees in degraded areas",
-        raised: 400000,
-        goal: 800000,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-    ],
-    events: [
-      {
-        id: 1,
-        title: "Tree Planting Day",
-        date: "March 30, 2024",
-        location: "Bagan Forest Reserve",
-        volunteers: 50,
-      },
-    ],
-    updates: [
-      {
-        id: 1,
-        title: "1000 Trees Planted",
-        date: "February 15, 2024",
-        content: "Volunteers helped us plant 1000 native trees in the Bagan area, contributing to forest restoration.",
-      },
-    ],
-  },
-  "5": {
-    id: 5,
-    name: "Women Empowerment Network",
-    nameMyanmar: "အမျိုးသမီးများ စွမ်းဆောင်ရည်မြှင့်တင်ရေး",
-    description: "Supporting women's rights and economic independence",
-    longDescription:
-      "Women Empowerment Network works to advance women's rights and economic opportunities in Myanmar through skills training, microfinance programs, and advocacy initiatives.",
-    image: "/placeholder.svg?height=400&width=800",
-    cause: "Women's Rights",
-    location: "Yangon",
-    verified: false,
-    founded: "2020",
-    raised: "420,000",
-    goal: "800,000",
-    volunteers: 22,
-    events: 4,
-    beneficiaries: "3,200+",
-    contact: {
-      phone: "+95 9 567 890 123",
-      email: "info@womenempowerment.org",
-      website: "www.womenempowerment.org",
-      facebook: "WomenEmpowermentMyanmar",
-    },
-    campaigns: [
-      {
-        id: 1,
-        title: "Skills Training Program",
-        description: "Vocational training for women entrepreneurs",
-        raised: 250000,
-        goal: 500000,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-    ],
-    events: [
-      {
-        id: 1,
-        title: "Women's Leadership Workshop",
-        date: "April 5, 2024",
-        location: "Yangon Business Center",
-        volunteers: 8,
-      },
-    ],
-    updates: [
-      {
-        id: 1,
-        title: "50 Women Complete Training",
-        date: "February 10, 2024",
-        content: "Our latest cohort of 50 women successfully completed the entrepreneurship training program.",
-      },
-    ],
-  },
-  "6": {
-    id: 6,
-    name: "Child Nutrition Program",
-    nameMyanmar: "ကလေးငယ်များအာဟာရပြည့်ဝရေး",
-    description: "Fighting malnutrition in rural communities",
-    longDescription:
-      "Child Nutrition Program addresses malnutrition among children in rural Myanmar through feeding programs, nutrition education, and community health initiatives.",
-    image: "/placeholder.svg?height=400&width=800",
-    cause: "Child Welfare",
-    location: "Ayeyarwady",
-    verified: true,
-    founded: "2016",
-    raised: "1,200,000",
-    goal: "2,200,000",
-    volunteers: 35,
-    events: 9,
-    beneficiaries: "6,800+",
-    contact: {
-      phone: "+95 9 678 901 234",
-      email: "info@childnutrition.org",
-      website: "www.childnutrition.org",
-      facebook: "ChildNutritionMyanmar",
-    },
-    campaigns: [
-      {
-        id: 1,
-        title: "School Feeding Program",
-        description: "Providing nutritious meals to school children",
-        raised: 700000,
-        goal: 1200000,
-        image: "/placeholder.svg?height=200&width=300",
-      },
-    ],
-    events: [
-      {
-        id: 1,
-        title: "Nutrition Education Workshop",
-        date: "March 25, 2024",
-        location: "Ayeyarwady Community Centers",
-        volunteers: 20,
-      },
-    ],
-    updates: [
-      {
-        id: 1,
-        title: "New Feeding Center Opened",
-        date: "February 5, 2024",
-        content: "We opened our 8th feeding center, now serving nutritious meals to 500 children daily.",
-      },
-    ],
-  },
+import { apiService } from "@/lib/api" // Your actual apiService instance
+
+// Define the shape of your NGO data after it's transformed from Strapi's 'attributes'
+interface Ngo {
+  id: number;
+  name: string;
+  nameMyanmar: string;
+  description: string;
+  image?: string; // URL of the image
+  cause: string;
+  location: string;
+  verified: boolean;
+  raised: number;
+  goal: number;
+  beneficiaries: string;
 }
 
-interface PageProps {
-  params: {
-    id: string
-  }
+// Define the shape of the raw Strapi response for a single NGO
+interface StrapiNgoResponse {
+  data: {
+    id: number;
+    attributes: {
+      name: string;
+      nameMyanmar: string;
+      description: string;
+      image?: { // This structure depends on your Strapi image field setup
+        data: {
+          attributes: {
+            url: string;
+          };
+        } | null; // It can be null if no image is uploaded
+      };
+      cause: string;
+      location: string;
+      verified: boolean;
+      raised: number;
+      goal: number;
+      beneficiaries: string;
+      // Other Strapi default fields like createdAt, updatedAt, publishedAt
+    };
+  } | null; // Data can be null if NGO not found
+  meta: {}; // Meta for single entry is often empty or minimal
 }
 
-export default function NGODetailPage({ params }: PageProps) {
-  const ngoData = ngosData[params.id as keyof typeof ngosData]
+const predefinedAmounts = [5000, 10000, 25000, 50000, 100000, 250000]
 
-  if (!ngoData) {
-    notFound()
+// Destructure { documentId } directly from params here
+export default function DonatePage({ params }: { params: { id: string } }) {
+  const router = useRouter()
+  const resolvedParams = use(params);
+  const ngoId = resolvedParams.id;
+  const [ngoData, setNgoData] = useState<Ngo | null>(null)
+  const [amount, setAmount] = useState("")
+  const [customAmount, setCustomAmount] = useState("")
+  const [paymentMethod, setPaymentMethod] = useState("")
+  const [donorInfo, setDonorInfo] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
+    anonymous: false,
+    newsletter: false,
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  const fetchNgoData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Use the destructured documentId directly
+      const response: StrapiNgoResponse = await apiService.getNGO(ngoId, "image")
+
+      if (response.data) {
+        const attributes = response.data
+        setNgoData({
+          id: attributes.documentId,
+          name: attributes.name,
+          nameMyanmar: attributes.nameMyanmar,
+          description: attributes.description,
+          image: attributes.image?.data?.attributes?.url || "/placeholder.svg",
+          cause: attributes.cause,
+          location: attributes.location,
+          verified: attributes.verified,
+          raised: attributes.raised,
+          goal: attributes.goal,
+          beneficiaries: attributes.beneficiaries,
+        })
+      } else {
+        setError("NGO not found.")
+      }
+    } catch (err: any) {
+      console.error("Error fetching NGO data:", err)
+      setError(err.message || "Failed to load NGO details. Please try again later.")
+    } finally {
+      setLoading(false)
+    }
+  }, [ngoId]) // Add documentId to the dependency array directly
+
+  useEffect(() => {
+    fetchNgoData()
+  }, [fetchNgoData])
+
+  const handleAmountSelect = (value: string) => {
+    setAmount(value)
+    setCustomAmount("")
   }
 
-  const progressPercentage =
-    (Number.parseInt(ngoData.raised.replace(/,/g, "")) / Number.parseInt(ngoData.goal.replace(/,/g, ""))) * 100
+  const handleCustomAmountChange = (value: string) => {
+    setCustomAmount(value)
+    setAmount("")
+  }
+
+  const getFinalAmount = (): string => {
+    const final = amount || customAmount;
+    return final && !isNaN(Number(final)) ? final : "";
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    const finalAmount = getFinalAmount()
+    if (!finalAmount || Number.parseInt(finalAmount) < 1000) {
+      setError("Minimum donation amount is MMK 1,000.")
+      setLoading(false)
+      return
+    }
+
+    if (!paymentMethod) {
+      setError("Please select a payment method.")
+      setLoading(false)
+      return
+    }
+
+    if (!donorInfo.name || !donorInfo.email || !donorInfo.phone) {
+        setError("Please fill in all required donor information fields (Name, Email, Phone).");
+        setLoading(false);
+        return;
+    }
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      setSuccess(true)
+      router.push(`/donate/${ngoData.id}/success?amount=${finalAmount}`)
+    } catch (err: any) {
+      console.error("Donation submission error:", err);
+      setError(err.message || "Donation failed. Please try again.")
+      setLoading(false)
+    }
+  }
+
+  if (loading && !ngoData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+        <p className="ml-3 text-gray-700">Loading NGO details...</p>
+      </div>
+    )
+  }
+
+  if (error && !ngoData && !loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <XCircle className="h-16 w-16 text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Oops! Something went wrong.</h2>
+        <p className="text-gray-600 text-center mb-4">{error}</p>
+        <Button onClick={() => router.push("/ngos")}>Go back to NGOs</Button>
+      </div>
+    )
+  }
+
+  if (!ngoData && !loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <Info className="h-16 w-16 text-gray-500 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">NGO Not Found</h2>
+        <p className="text-gray-600 text-center mb-4">The NGO you are looking for does not exist or has been removed.</p>
+        <Button onClick={() => router.push("/ngos")}>Browse other NGOs</Button>
+      </div>
+    );
+  }
+
+  const progressPercentage = (ngoData!.raised / ngoData!.goal) * 100;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -510,7 +372,7 @@ export default function NGODetailPage({ params }: PageProps) {
                 </TabsContent>
 
                 <TabsContent value="campaigns" className="space-y-6">
-                  {ngoData.campaigns.map((campaign) => (
+                  {ngoData?.campaigns?.map((campaign) => (
                     <Card key={campaign.id}>
                       <div className="md:flex">
                         <img
@@ -536,7 +398,7 @@ export default function NGODetailPage({ params }: PageProps) {
                 </TabsContent>
 
                 <TabsContent value="events" className="space-y-4">
-                  {ngoData.events.map((event) => (
+                  {ngoData?.events?.map((event) => (
                     <Card key={event.id}>
                       <CardContent className="p-6">
                         <div className="flex justify-between items-start">
@@ -560,7 +422,7 @@ export default function NGODetailPage({ params }: PageProps) {
                 </TabsContent>
 
                 <TabsContent value="updates" className="space-y-4">
-                  {ngoData.updates.map((update) => (
+                  {ngoData?.updates?.map((update) => (
                     <Card key={update.id}>
                       <CardContent className="p-6">
                         <div className="flex justify-between items-start mb-2">
@@ -616,19 +478,19 @@ export default function NGODetailPage({ params }: PageProps) {
                 <CardContent className="space-y-3">
                   <div className="flex items-center">
                     <Phone className="h-4 w-4 mr-3 text-gray-400" />
-                    <span className="text-sm">{ngoData.contact.phone}</span>
+                    <span className="text-sm">{ngoData?.contact?.phone}</span>
                   </div>
                   <div className="flex items-center">
                     <Mail className="h-4 w-4 mr-3 text-gray-400" />
-                    <span className="text-sm">{ngoData.contact.email}</span>
+                    <span className="text-sm">{ngoData?.contact?.email}</span>
                   </div>
                   <div className="flex items-center">
                     <Globe className="h-4 w-4 mr-3 text-gray-400" />
-                    <span className="text-sm">{ngoData.contact.website}</span>
+                    <span className="text-sm">{ngoData?.contact?.website}</span>
                   </div>
                   <div className="flex items-center">
                     <Facebook className="h-4 w-4 mr-3 text-gray-400" />
-                    <span className="text-sm">{ngoData.contact.facebook}</span>
+                    <span className="text-sm">{ngoData?.contact?.facebook}</span>
                   </div>
                 </CardContent>
               </Card>
